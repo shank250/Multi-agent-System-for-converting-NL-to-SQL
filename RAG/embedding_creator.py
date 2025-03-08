@@ -1,5 +1,5 @@
 import json
-import openai
+# import openai
 import psycopg2
 import os 
 from dotenv import load_dotenv
@@ -26,10 +26,13 @@ def get_embedding(text):
     }
     response = requests.post(url, headers=headers, json=data)
     response_data = response.json()
-    print(response_data)
+    # print(response_data)
+    
     return response_data['data'][0]['embedding']
 
 def search_similar_query(nl_query, top_k=4):
+    conn = get_db_connection()
+    cur = conn.cursor()
     # Generate Embedding for the Input Query
     query_embedding = get_embedding(nl_query)
 
@@ -53,8 +56,12 @@ def search_similar_query(nl_query, top_k=4):
     conn.close()
 
     return results
+
+
 def search_tables(nl_query,top_k=15):
     # Generate Embedding for the Input Query
+    conn = get_db_connection()
+    cur = conn.cursor()
     query_embedding = get_embedding(nl_query)
 
     # Convert to PostgreSQL Vector Format
@@ -66,7 +73,7 @@ def search_tables(nl_query,top_k=15):
 
     # Perform Similarity Search Using `pgvector`
     cur.execute(f"""
-        SELECT table_name, 1 - (embedding_vector <=> '{embedding_str}') AS similarity
+        SELECT table_name, columns_description, 1 - (embedding_vector <=> '{embedding_str}') AS similarity
         FROM schema_embeddings
         ORDER BY similarity DESC
         LIMIT {top_k};
@@ -81,7 +88,7 @@ def search_tables(nl_query,top_k=15):
 
 
 # Connect to PostgreSQL
-from db_conf import get_db_connection
+from RAG.db_conf import get_db_connection
 conn = get_db_connection()
 cur = conn.cursor()
 

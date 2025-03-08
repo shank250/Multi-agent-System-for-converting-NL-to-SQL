@@ -1,14 +1,15 @@
 import os
 import json
 import requests
-import test_schema_embedding
+# import test_schema_embedding
 from dotenv import load_dotenv
+import RAG.embedding_creator as search_api
 
 load_dotenv()
 
 # Get the Groq API key
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-MODEL="mixtral-8x7b-32768"
+MODEL="gemma2-9b-it"
 
 total_tokens = 0
 
@@ -45,15 +46,21 @@ def call_groq_api(api_key, model, messages, temperature=0.2, max_tokens=8100, n=
         'n': n
     }
 
-    response = requests.post(url, headers=headers, json=data)
+    try:
+        response = requests.post(url, headers=headers, json=data)
+    except Exception as e:
+        print("Error in API call:", e)
+        print(json.dumps(response_json, indent=4))    
+
     response_json = response.json()
     total_tokens += response_json.get('usage', {}).get('completion_tokens', 0)
     call_token_count = response_json.get('usage', {}).get('completion_tokens', 0)
+    print(json.dumps(response_json, indent=4))
     completion_text = response_json['choices'][0]['message']['content']
 
     return completion_text, call_token_count
 
-def table_agent(raw_user_query):
+def table_agent(raw_user_query, possible_tables):
     """
     Identifies necessary tables from the database schema based on the user query.
     
@@ -65,13 +72,13 @@ def table_agent(raw_user_query):
             - required_tables (str): Comma-separated list of required table names
             - table_agent_token (int): Number of tokens used in this operation
     """
-    database_schema = _get_database_schema(raw_user_query)
+    
 
     prompt = f"""You are a database expert tasked with identifying the necessary tables for SQL query generation.
 
             CONTEXT:
             - User query: '{raw_user_query}'
-            - Database schema: {database_schema} (organized by priority based on vector similarity)
+            - Possible Tables: {possible_tables} (organized by priority based on vector similarity)
 
             INSTRUCTIONS:
             1. Analyze the user query and determine ALL tables required to generate a complete SQL response
@@ -112,34 +119,35 @@ def prune_agent(raw_user_query, required_tables):
             - pruning_token_count (int): Number of tokens used in this operation
     """
     required_tables=required_tables.split(",")
-    prompt = f"""You are a database expert identifying necessary columns for SQL generation.
-
-CONTEXT:
-- User query: '{raw_user_query}'
-- Table schema: {table_schema}
-
-INSTRUCTIONS:
-1. Select only columns from this table needed to answer the user's query
-2. Consider columns needed for selection, filtering, joins, grouping, or calculations
-
-OUTPUT FORMAT:
-Return a compact JSON object:
-{{
-  "{table_name}": {{
-    "column1": "type:varchar | description:Primary key, used for joins",
-    "column2": "type:int | description:Filtering condition in query"
-  }}
-}}
-
-Combine data type and important relationship details in the description.
-Only include columns necessary for this specific query.
-"""
+   
     pruning_token_count = 0
     required_table_details = []
 
     for table_name in required_tables:
         try:
             table_schema = _get_table_schema(table_name)
+            prompt = f"""You are a database expert identifying necessary columns for SQL generation.
+
+                CONTEXT:
+                - User query: '{raw_user_query}'
+                - Table schema: {table_schema}
+
+                INSTRUCTIONS:
+                1. Select only columns from this table needed to answer the user's query
+                2. Consider columns needed for selection, filtering, joins, grouping, or calculations
+
+                OUTPUT FORMAT:
+                Return a compact JSON object:
+                {{
+                "{table_name}": {{
+                    "column1": "type:varchar | description:Primary key, used for joins",
+                    "column2": "type:int | description:Filtering condition in query"
+                }}
+                }}
+
+                Combine data type and important relationship details in the description.
+                Only include columns necessary for this specific query.
+                """
             # TODO: Improvise the table_schema structure for further processing by the prompt
             messages = [
                 {
@@ -199,7 +207,8 @@ INSTRUCTIONS:
 8. Optimize the query to be efficient and not overly complex
 
 OUTPUT FORMAT:
-Return ONLY valid SQL query text - no explanations, comments, or additional text.
+Return ONLY valid SQL query text - no explanations, comments, additional text, not even ```sql ...``` .
+You may include ; in the end if required.
 """
     messages = [
             {
@@ -212,6 +221,7 @@ Return ONLY valid SQL query text - no explanations, comments, or additional text
     sql_statement, final_call_token_count = call_groq_api(GROQ_API_KEY,MODEL,messages)
 
     return sql_statement, final_call_token_count
+
 
 
 def _get_database_schema(query):
