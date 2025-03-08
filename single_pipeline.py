@@ -14,6 +14,7 @@ MODEL="gemma2-9b-it"
 # Global variable to keep track of the total number of tokens
 total_tokens = 0
 def call_groq_api(api_key, model, messages, temperature=0.0, max_tokens=7000, n=1):
+    print(messages)
     """
     NOTE: DO NOT CHANGE/REMOVE THE TOKEN COUNT CALCULATION 
     Call the Groq API to get a response from the language model.
@@ -51,6 +52,7 @@ def call_groq_api(api_key, model, messages, temperature=0.0, max_tokens=7000, n=
 
     response = requests.post(url, headers=headers, json=data)
     response_json = response.json()
+    print(response_json)
 
 
     # Update the global token count
@@ -68,12 +70,13 @@ def table_agent(query):
     database_schema=get_database_schema(query)
     messages = [
         {
-            "role": "You are an expert in Intent understanding and SQL schema ",
+            "role": "user",
 
-            "content": "User want solution for for given query {query} and the schema for the database tables is {database_schema} it is organised in priority wise as per vetcor similarity. Just return all the tables we need to responsd to given user query just return list of that tables. Return it in string format table name separated by ',' comma and amke sure table name is same as in table schema"
+            "content": f"User want solution for for given query {query} and the schema for the database tables is {database_schema} it is organised in priority wise as per vetcor similarity. Just return all the tables we need to responsd to given user query just return list of that tables. Return it in string format table name separated by ',' comma and amke sure table name is same as in table schema"
         }
     ]
     response,tokens=call_groq_api(GROQ_API_KEY ,MODEL,messages)
+    
     return response
 def prune_agent(query):
     response_tab_agent=table_agent(query)
@@ -84,9 +87,9 @@ def prune_agent(query):
         table_schema=get_table_schema(table)
         messages = [
             {
-                "role": "You are an expert in Intent understanding and SQL schema ",
+                "role": "user",
                 
-                "content": " As per user query{query} filter all the attributes or columns i need in the given table{table_schema}. This is needed details only for given table with respect tot his given query no other tables and otehr thing. return it in json object format. like one key required true or false is tabel required and other things if required thne all the attriutes or column name i need to respond this query"
+                "content": f"You are an expert in Intent understanding and SQL schema As per user query{query} filter all the attributes or columns i need in the given table{table_schema}. This is needed details only for given table with respect tot his given query no other tables and otehr thing. return it in json object format. like one key required true or false is tabel required and other things if required thne all the attriutes or column name i need to respond this query"
             }
         ]
         table_attributes_required,t=call_groq_api(GROQ_API_KEY,MODEL,messages)
@@ -98,10 +101,41 @@ def final_sql_query_generator(query):
     sql_statement=""
     messages = [
             {
-                "role": "You are an expert in Intent understanding and SQL schema ",
+                "role": "user",
                 
-                "content": " As per user query{query} and below table_schema{required_table_details}. Generate a sql query which can provide resposne to this user query and provide right response."
+                "content": f"You are an expert in Intent understanding and SQL schema  As per user query{query} and below table_schema{required_table_details}. Generate a sql query which can provide resposne to this user query and provide right response. I want only sql query nothing else not extra words or anything"
             }
         ]
     sql_statement=call_groq_api(GROQ_API_KEY,MODEL,messages)
     return sql_statement
+
+
+
+
+
+
+# sample only
+def get_database_schema(query):
+    """
+    Fetches the relevant database schema for a given query.
+    :return: JSON string of database schema.
+    """
+    return json.dumps({
+        "tables": [
+            {"name": "employees", "columns": ["id", "name", "salary", "department_id"]},
+            {"name": "departments", "columns": ["id", "name"]}
+        ]
+    })
+
+# Mock function to get schema of a specific table
+def get_table_schema(table_name):
+    """
+    Fetches the schema of a specific table.
+    :return: JSON string of table schema.
+    """
+    schemas = {
+        "employees": {"id": "int", "name": "varchar", "salary": "float", "department_id": "int"},
+        "departments": {"id": "int", "name": "varchar"}
+    }
+    return json.dumps(schemas.get(table_name, {}))
+final_sql_query_generator("For finding salary of highest paid employee")
