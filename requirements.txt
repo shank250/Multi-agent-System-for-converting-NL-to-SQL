@@ -1,0 +1,11 @@
+langchain
+langchain-community
+faiss-cpu
+transformers
+jsons
+python-dotenv
+langchain-google-genai
+numpy
+langchain-core
+chromadb
+sentence-transformers
