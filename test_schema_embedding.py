@@ -52,9 +52,13 @@ embedding = HuggingFaceBgeEmbeddings(
     encode_kwargs={"normalize_embeddings": True}
 )
 
-# # Create vector database instance
-# vector_store = create_vector_db(final_document, embedding)
 
+def wrapper():
+    # # Create vector database instance
+    vector_store = create_vector_db(final_document, embedding)
+    return vector_store
+# def get_json_data():
+    
 # # Example search query
 # query = "Customer Info"
 # results = search_vector_db(vector_store, query)

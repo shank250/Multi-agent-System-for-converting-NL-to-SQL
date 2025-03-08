@@ -9,8 +9,8 @@ load_dotenv()
 import os
 
 # Get the Groq API key
-GROQ_API_KEY = os.getenv("GROQ_API")
-MODEL="gemma2-9b-it"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MODEL="mixtral-8x7b-32768"
 # Global variable to keep track of the total number of tokens
 total_tokens = 0
 def call_groq_api(api_key, model, messages, temperature=0.0, max_tokens=7000, n=1):
@@ -57,7 +57,8 @@ def call_groq_api(api_key, model, messages, temperature=0.0, max_tokens=7000, n=
 
     # Update the global token count
     total_tokens += response_json.get('usage', {}).get('completion_tokens', 0)
-    completion_text = response_json["choices"][0]["message"]["content"]
+    completion_text = response_json['choices'][0]['message']['content']
+
 
     # You can get the completion from response_json['choices'][0]['message']['content']
     # return response_json, total_tokens
@@ -68,6 +69,8 @@ def call_groq_api(api_key, model, messages, temperature=0.0, max_tokens=7000, n=
 def table_agent(query):
     # table_schema=get_table_schema()
     database_schema=get_database_schema(query)
+    
+    print("\n\n\n")
     messages = [
         {
             "role": "user",
@@ -84,16 +87,20 @@ def prune_agent(query):
     required_tables=response_tab_agent.split(",")
 
     for table in required_tables:
-        table_schema=get_table_schema(table)
-        messages = [
-            {
-                "role": "user",
-                
-                "content": f"You are an expert in Intent understanding and SQL schema As per user query{query} filter all the attributes or columns i need in the given table{table_schema}. This is needed details only for given table with respect tot his given query no other tables and otehr thing. return it in json object format. like one key required true or false is tabel required and other things if required thne all the attriutes or column name i need to respond this query"
-            }
-        ]
-        table_attributes_required,t=call_groq_api(GROQ_API_KEY,MODEL,messages)
-        required_table_details+=table_attributes_required
+        try:
+            table_schema=get_table_schema(table)
+            messages = [
+                {
+                    "role": "user",
+                    
+                    "content": f"You are an expert in Intent understanding and SQL schema As per user query{query} filter all the attributes or columns i need in the given table{table_schema}. This is needed details only for given table with respect tot his given query no other tables and otehr thing. return it in json object format. like one key required true or false is tabel required and other things if required thne all the attriutes or column name i need to respond this query"
+                }
+            ]
+            table_attributes_required,t=call_groq_api(GROQ_API_KEY,MODEL,messages)
+            required_table_details+=table_attributes_required
+        except Exception as e:
+            print(e)
+            
     return required_table_details
 
 def final_sql_query_generator(query):
@@ -120,12 +127,15 @@ def get_database_schema(query):
     Fetches the relevant database schema for a given query.
     :return: JSON string of database schema.
     """
-    return json.dumps({
-        "tables": [
-            {"name": "employees", "columns": ["id", "name", "salary", "department_id"]},
-            {"name": "departments", "columns": ["id", "name"]}
-        ]
-    })
+    isinstance_search_db = test_schema_embedding.wrapper()
+    results = isinstance_search_db.similarity_search( query, k=1)
+    # return json.dumps({
+    #     "tables": [
+    #         {"name": "employees", "columns": ["id", "name", "salary", "department_id"]},
+    #         {"name": "departments", "columns": ["id", "name"]}
+    #     ]
+    # })
+    return results[0].page_content
 
 # Mock function to get schema of a specific table
 def get_table_schema(table_name):
@@ -133,9 +143,17 @@ def get_table_schema(table_name):
     Fetches the schema of a specific table.
     :return: JSON string of table schema.
     """
-    schemas = {
-        "employees": {"id": "int", "name": "varchar", "salary": "float", "department_id": "int"},
-        "departments": {"id": "int", "name": "varchar"}
-    }
-    return json.dumps(schemas.get(table_name, {}))
-final_sql_query_generator("For finding salary of highest paid employee")
+    with open("./schema_description.json", "r", encoding="utf-8") as file:
+        # sql_text = file.read()
+        data=json.load(file)
+    table_name=table_name.split(" ")[0]
+    # print(table_name)
+    return data[table_name]
+       
+    
+    # schemas = {
+    #     "employees": {"id": "int", "name": "varchar", "salary": "float", "department_id": "int"},
+    #     "departments": {"id": "int", "name": "varchar"}
+    # }
+    # return json.dumps(schemas.get(table_name, {}))
+final_sql_query_generator("Highest sale overall")
