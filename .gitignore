@@ -1,3 +1,6 @@
 /.env
 /venv
 /__pycache__
+/database.py
+/embedder_schema.py
+/main.py
