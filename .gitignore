@@ -3,6 +3,5 @@
 /__pycache__
 /database.py
 /embedder_schema.py
-/main.py
 /adobe-ai-agent
 /RAG/__pycache__
