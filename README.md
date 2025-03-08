@@ -1,113 +1,87 @@
-
 ## System Flow Charts
 
-### Vector Database Creation
-![Vector Database Creation Flow Chart](images/flow1.png)
+### Complete Flow Chart
+![Complete Flow Chart](images/FinalFlowChart.png)
 
-### Query Processing Flow
-![Query Processing Flow Chart](images/flow2.png)
 
-## Detailed Process Steps
+### Key Files and Their Functions
 
-### A. Vector Database Creation
+- **[database.py](database.py)**: Contains functions to create, list, and delete tables in a PostgreSQL database.
+  - `create_tables_from_sql_file(sql_file_path, db_name, user, password, host='localhost', port='5432')`: Creates tables from an SQL file.
+  - `list_all_tables(db_name, user, password, host='localhost', port='5432')`: Lists all tables in the database.
+  - `get_table_schema(db_name, user, password, host='localhost', port='5432', table_name='')`: Retrieves the schema of a specific table.
+  - `delete_all_tables(db_name, user, password, host='localhost', port='5432')`: Deletes all tables in the database.
 
-1. **Start with database_general_schema**: Initialize the process with the general database schema that contains all table definitions.
+- **[main.py](main.py)**: Processes NL queries and compares them with expected SQL queries.
+  - `process_json_object(nl_query)`: Dummy function to process the NL query.
+  - `normalize_string(s)`: Converts a string to lowercase and strips extra spaces.
+  - `check_query_match(expected_query, generated_query)`: Compares normalized queries.
+  - `process_single_json_object(json_obj)`: Processes a single JSON object and checks if it matches.
+  - `process_json_objects(file_path)`: Reads JSON file and returns the list of objects.
+  - `process_queries_multithreaded(file_path, max_threads=16)`: Processes queries using multithreading.
+  - `process_queries_linear(file_path)`: Processes queries one by one in a linear way.
 
-2. **Create chunks of each table**: Break down the database schema into manageable chunks, focusing on individual tables and their relationships.
+- **[single_pipeline.py](single_pipeline.py)**: Integrates various components to generate SQL queries from NL inputs.
+  - `call_groq_api(api_key, model, messages, temperature=0.0, max_tokens=7000, n=1)`: Calls the Groq API to get a response from the language model.
+  - `table_agent(query)`: Determines the relevant tables for a given query.
+  - `prune_agent(query)`: Filters the necessary columns for the relevant tables.
+  - `final_sql_query_generator(query)`: Generates the final SQL query based on the user query and table schema.
 
-3. **For each table schema call LLM**: Use a Large Language Model to analyze and understand each table's structure, relationships, and purpose.
+- **[test_schema_embedding.py](test_schema_embedding.py)**: Embeds and searches the database schema using a vector database.
+  - `create_vector_db(documents, embedding_model)`: Creates and returns an instance of the vector database.
+  - `search_vector_db(vector_store, query, top_k=15)`: Searches the vector database for the most similar documents.
+  - `wrapper()`: Creates a vector database instance.
 
-4. **Get table description & columns description**: Extract detailed descriptions of tables and their columns, including data types, constraints, and semantic meaning.
+## How to Run
 
-5. **Create Vector Embedding from this information**: Generate vector embeddings from the table and column descriptions, creating a numerical representation that captures semantic meaning.
+1. **Set Up Environment**:
+   - Install the required packages using `pip install -r requirements.txt`.
+   - Ensure you have a PostgreSQL database set up and update the connection parameters in `database.py`.
 
-6. **Store embeddings in vector database**: Save these vector embeddings in a specialized vector database for efficient similarity searching.
+2. **Run the Main Script**:
+   - Execute `main.py` to process NL queries and generate SQL queries.
 
-### B. Query Processing Flow
+3. **Run the Single Pipeline**:
+   - Execute `single_pipeline.py` to integrate the entire process and generate SQL queries from NL inputs.
 
-1. **Raw prompt: SQL command**: Begin with a user's raw SQL command or query request.
+## Environment Variables
 
-2. **search_API**: Pass the raw query to the search API that was created earlier.
+- **GROQ_API_KEY**: API key for the Groq API.
 
-3. **Vector Search**: Initiate a vector search process using the embedded query.
+## Example Usage
 
-4. **Query vector database**: Search the vector database containing the table and column embeddings.
+```python
+# Define your database connection parameters
+db_name = 'postgres'
+user = 'postgres'
+password = '12345'
+sql_file_path = '/path/to/your/sql_file.sql'
 
-5. **Retrieve relevant table/column information**: Fetch the most semantically relevant table and column information based on similarity scores.
+# Create tables from SQL file
+create_tables_from_sql_file(sql_file_path, db_name, user, password)
 
-6. **Table filters**: Apply filters to narrow down the relevant tables based on the query context.
+# Process queries
+process_queries_multithreaded('D:\\Hackathons\\Adobe\\train_generate_task.json')
+process_queries_linear('D:\\Hackathons\\Adobe\\train_generate_task.json')
+```
 
-7. **Column groupings**: Group related columns that might be needed for the query.
+## Performance Metrics
 
-8. **Find called table to the LLM**: Identify which specific tables need to be referenced and send this information to the LLM.
+| Metric Type | Component | Performance |
+|------------|-----------|-------------|
+| Accuracy   | Table Selection | -% |
+|            | Column Pruning  | -% |
+|            | SQL Generation  | -% |
+| Tokens     | Table Selection | ~500 |
+|            | Column Pruning  | ~800 |
+|            | SQL Generation  | ~1200 |
+| Time (sec) | Table Selection | 0.8s |
+|            | Column Pruning  | 1.2s |
+|            | SQL Generation  | 1.5s |
+| **Totals** | Accuracy (avg)  | -% |
+|            | Tokens/Query    | ~2500 |
+|            | Time/Query      | 3.5s  |
 
-9. **Similar Query**: Generate similar queries that match the pattern of the user's intent.
 
-10. **Sample Query**: Create sample queries that demonstrate how to properly structure the desired SQL command.
 
-11. **Function Call**: Make necessary function calls to process the data and prepare for SQL generation.
-
-12. **Generate SQL command**: Create the optimized SQL command based on all gathered information.
-
-13. **Return final SQL output**: Return the final, optimized SQL command to the user.
-
-## Integration Notes
-
-This RAG system functions as part of a larger program, enhancing SQL query capabilities through AI-driven database understanding. The vector search API created earlier serves as a crucial component that bridges the user's raw query intent with the database's structure and semantics.
-
-The overall flow represents a gen AI agentic system that translates user requirements into optimized database queries by leveraging contextual understanding of the database schema.
-
-# RAG System Documentation
-
-This document provides a comprehensive overview of the Retrieval-Augmented Generation (RAG) system designed to enhance SQL query processing through intelligent database schema understanding.
-
-## System Flow Chart
-
-    
-
-## Detailed Process Steps
-
-### A. Vector Database Creation
-
-1. **Start with database_general_schema**: Initialize the process with the general database schema that contains all table definitions.
-
-2. **Create chunks of each table**: Break down the database schema into manageable chunks, focusing on individual tables and their relationships.
-
-3. **For each table schema call LLM**: Use a Large Language Model to analyze and understand each table's structure, relationships, and purpose.
-
-4. **Get table description & columns description**: Extract detailed descriptions of tables and their columns, including data types, constraints, and semantic meaning.
-
-5. **Create Vector Embedding from this information**: Generate vector embeddings from the table and column descriptions, creating a numerical representation that captures semantic meaning.
-
-6. **Store embeddings in vector database**: Save these vector embeddings in a specialized vector database for efficient similarity searching.
-
-### B. Query Processing Flow
-
-1. **Raw prompt: SQL command**: Begin with a user's raw SQL command or query request.
-
-2. **search_API**: Pass the raw query to the search API that was created earlier.
-
-3. **Vector Search**: Initiate a vector search process using the embedded query.
-
-4. **Query vector database**: Search the vector database containing the table and column embeddings.
-
-5. **Retrieve relevant table/column information**: Fetch the most semantically relevant table and column information based on similarity scores.
-
-6. **Table filters**: Apply filters to narrow down the relevant tables based on the query context.
-
-7. **Column groupings**: Group related columns that might be needed for the query.
-
-8. **Find called table to the LLM**: Identify which specific tables need to be referenced and send this information to the LLM.
-
-9. **Similar Query**: Generate similar queries that match the pattern of the user's intent.
-
-10. **Sample Query**: Create sample queries that demonstrate how to properly structure the desired SQL command.
-
-11. **Function Call**: Make necessary function calls to process the data and prepare for SQL generation.
-
-12. **Generate SQL command**: Create the optimized SQL command based on all gathered information.
-
-13. **Return final SQL output**: Return the final, optimized SQL command to the user.
-
-## Integration Notes
-
+Note: These metrics are based on a test set of 100 queries using Groq API with the LLM-3B model.
