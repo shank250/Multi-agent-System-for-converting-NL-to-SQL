@@ -2,7 +2,7 @@
 
 ### Complete Flow Chart
 ![Complete Flow Chart](images/FinalFlowChart.png)
-
+*Parallelogram represent Individual LLM Calls(Agents)
 
 ### Key Files and Their Functions
 
