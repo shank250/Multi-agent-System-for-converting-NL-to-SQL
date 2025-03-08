@@ -38,10 +38,10 @@ def search_vector_db(vector_store, query, top_k=15):
     return results
 
 # Load and process the schema document
-with open("./schema_description.json", "r", encoding="utf-8") as file:
+with open("./table_schemas.json", "r", encoding="utf-8") as file:
     sql_text = file.read()
 
-sql_document = Document(page_content=sql_text, metadata={"source": "schema_description.json"})
+sql_document = Document(page_content=sql_text, metadata={"source": "table_schemas.json"})
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=500)
 final_document = text_splitter.split_documents([sql_document])
 

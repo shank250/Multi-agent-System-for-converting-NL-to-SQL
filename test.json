@@ -1,5 +1,4 @@
-// {
-//     "customerInfo": "THis table contains information about theb customers.....",
-//     "first_name string 50 erer", "this column represents the users first neme",
-//     --
-// }
+{
+    "customerInfo": "THis table contains information about theb customers.....",
+    "first_name string 50 erer": "this column represents the users first neme"
+}

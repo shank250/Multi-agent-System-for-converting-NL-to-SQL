@@ -13,7 +13,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 MODEL="mixtral-8x7b-32768"
 # Global variable to keep track of the total number of tokens
 total_tokens = 0
-def call_groq_api(api_key, model, messages, temperature=0.0, max_tokens=7000, n=1):
+def call_groq_api(api_key, model, messages, temperature=0.2, max_tokens=8100, n=1):
     print(messages)
     """
     NOTE: DO NOT CHANGE/REMOVE THE TOKEN COUNT CALCULATION 
@@ -110,7 +110,7 @@ def final_sql_query_generator(query):
             {
                 "role": "user",
                 
-                "content": f"You are an expert in Intent understanding and SQL schema  As per user query{query} and below table_schema{required_table_details}. Generate a sql query which can provide resposne to this user query and provide right response. I want only sql query nothing else not extra words or anything"
+                "content": f"You are an expert in Intent understanding and SQL schema  As per user query{query} and below table_schema{required_table_details}. Generate a sql query which can provide resposne to this user query and provide right response. I want only sql query nothing else not extra words or anything without changing the default name of column into that table schema"
             }
         ]
     sql_statement=call_groq_api(GROQ_API_KEY,MODEL,messages)
@@ -143,7 +143,7 @@ def get_table_schema(table_name):
     Fetches the schema of a specific table.
     :return: JSON string of table schema.
     """
-    with open("./schema_description.json", "r", encoding="utf-8") as file:
+    with open("./table_schemas.json", "r", encoding="utf-8") as file:
         # sql_text = file.read()
         data=json.load(file)
     table_name=table_name.split(" ")[0]
@@ -156,4 +156,4 @@ def get_table_schema(table_name):
     #     "departments": {"id": "int", "name": "varchar"}
     # }
     # return json.dumps(schemas.get(table_name, {}))
-final_sql_query_generator("Highest sale overall")
+final_sql_query_generator("Find the product name and average review rating for products with more than 100 reviews")
