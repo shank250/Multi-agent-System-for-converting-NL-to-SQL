@@ -3,6 +3,7 @@
 import json
 import requests
 import time
+import test_schema_embedding
 from dotenv import load_dotenv
 load_dotenv()
 import os
