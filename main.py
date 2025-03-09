@@ -1,6 +1,7 @@
 PATH_TO_SQL_QUERY_TESTING_FILE = "D:\Hackathons\Adobe\train_generate_task.json"
-
+import os
 import json
+import time
 import threading
 import single_pipeline
 import RAG.embedding_creator as search_api
@@ -11,6 +12,8 @@ def start_single_pipeline(nl_query):
     Should return the corresponding SQL query as a string.
     """
     print(f"Processing query: {nl_query}")
+
+    start_time = time.time()
 
     # Getting Relevant Tables [RAG]
     relevant_tables = search_api.search_tables(nl_query)
@@ -29,6 +32,32 @@ def start_single_pipeline(nl_query):
     print("SQL Generation Token Count:", sql_agent_token_count)
     print("-----------")
 
+    file_path = "result.json"
+
+    # Read existing data
+    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+        with open(file_path, "r") as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = []
+    else:
+        data = []
+
+    # Append new entry
+    data.append({"NL": nl_query, "Query": sql_query})
+
+    # Write back to file
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
+
+    end_time = time.time()
+    print("-----------Performance Metrics-----------")
+    print(f"Time taken: {end_time - start_time:.2f} seconds")
+    print(f"Total Tokens: {table_agent_token_count + column_agent_token_count + sql_agent_token_count}")
+    print(f"SQL Query: {sql_query}")
+    print("----------------------------")
+    exit()
     return sql_query  # Replace this with actual query generation logic
 
 def normalize_string(s):
@@ -112,7 +141,7 @@ def process_queries_linear(file_path):
     print(f"Unsuccessful Matches: {unsuccessful_matches}")
 
 if __name__ == "__main__":
-    sql_file_path = 'other\\train_generate_task.json'  # Ensure proper escaping
+    sql_file_path = 'other\sample_submission_generate_task.json'  # Ensure proper escaping
     
     # print("\nRunning Multithreaded Processing...")
     # process_queries_multithreaded(sql_file_path)

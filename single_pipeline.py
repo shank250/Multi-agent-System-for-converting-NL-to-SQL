@@ -3,17 +3,25 @@ import json
 import requests
 # import test_schema_embedding
 from dotenv import load_dotenv
+import time
 import RAG.embedding_creator as search_api
 
 load_dotenv()
 
 # Get the Groq API key
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-MODEL="gemma2-9b-it"
+GROQ_API_KEY_1 = os.getenv("GROQ_API_KEY_RAG")
+GROQ_API_KEY_2 = os.getenv("GROQ_API_KEY_RAG_2")
+GROQ_API_KEY_3 = os.getenv("GROQ_API_KEY_SHIVAM")
+GROQ_API_KEY = GROQ_API_KEY_1
+MODEL="llama-3.1-8b-instant"
+
+api_key_list = [GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3]
+current_index = 0
+# MODEL = 'llama-3.1-8b-instant'
 
 total_tokens = 0
 
-def call_groq_api(api_key, model, messages, temperature=0.2, max_tokens=8100, n=1):
+def call_groq_api(api_key, model, messages, temperature=0.2, max_tokens=8000, n=1):
     """
     Call the Groq API to get a response from the language model.
     
@@ -30,6 +38,10 @@ def call_groq_api(api_key, model, messages, temperature=0.2, max_tokens=8100, n=
             - completion_text (str): The generated response from the model
             - call_token_count (int): Number of tokens used in this API call
     """
+    global current_index
+    current_index = (current_index + 1) % len(api_key_list)
+    api_key = api_key_list[current_index]
+
     global total_tokens
     url = "https://api.groq.com/openai/v1/chat/completions"
     
@@ -53,8 +65,8 @@ def call_groq_api(api_key, model, messages, temperature=0.2, max_tokens=8100, n=
         print(json.dumps(response_json, indent=4))    
 
     response_json = response.json()
-    total_tokens += response_json.get('usage', {}).get('completion_tokens', 0)
-    call_token_count = response_json.get('usage', {}).get('completion_tokens', 0)
+    total_tokens += response_json.get('usage', {}).get('total_tokens', 0)
+    call_token_count = response_json.get('usage', {}).get('total_tokens', 0)
     print(json.dumps(response_json, indent=4))
     completion_text = response_json['choices'][0]['message']['content']
 
@@ -73,6 +85,7 @@ def table_agent(raw_user_query, possible_tables):
             - table_agent_token (int): Number of tokens used in this operation
     """
     
+    print("Table Agent Started...")
 
     prompt = f"""You are a database expert tasked with identifying the necessary tables for SQL query generation.
 
@@ -103,6 +116,8 @@ def table_agent(raw_user_query, possible_tables):
 
     response, table_agent_token = call_groq_api(GROQ_API_KEY ,MODEL,messages)
 
+    print("Table agent completed.")
+
     return response, table_agent_token
 
 def prune_agent(raw_user_query, required_tables):
@@ -121,11 +136,15 @@ def prune_agent(raw_user_query, required_tables):
     required_tables=required_tables.split(",")
    
     pruning_token_count = 0
-    required_table_details = []
-
-    for table_name in required_tables:
+    required_table_details = ""
+    print(required_tables)
+    for table_name in list(required_tables):
+        time.sleep(1)
         try:
+            
+            print("Pruning Started for Table:", table_name)
             table_schema = _get_table_schema(table_name)
+            
             prompt = f"""You are a database expert identifying necessary columns for SQL generation.
 
                 CONTEXT:
@@ -158,9 +177,10 @@ def prune_agent(raw_user_query, required_tables):
             ]
 
             table_attributes_required, token_count = call_groq_api(GROQ_API_KEY,MODEL,messages)
+            print(table_attributes_required)
             pruning_token_count += token_count
-            required_table_details += table_attributes_required
-
+            # required_table_details += table_attributes_required
+            print("Table Pruning Completed for Table", table_name)
         except Exception as e:
             print(":("*20)
             print(e)
@@ -181,6 +201,7 @@ def final_sql_query_generator(raw_user_query, required_table_details, sample_que
             - sql_statement (str): The generated SQL query
             - final_call_token_count (int): Number of tokens used in this operation
     """
+    print("Final Query Generation started...")
     prompt = f"""You are an advanced SQL query generator with expertise in database schema interpretation.
 
 TASK: Generate a precise SQL query that answers the user's question using only the provided table schemas.
@@ -207,7 +228,7 @@ INSTRUCTIONS:
 8. Optimize the query to be efficient and not overly complex
 
 OUTPUT FORMAT:
-Return ONLY valid SQL query text - no explanations, comments, additional text, not even ```sql ...``` .
+Return ONLY valid SQL query text - no explanations, comments, additional text, not even \n and```sql ...``` .
 You may include ; in the end if required.
 """
     messages = [
@@ -219,6 +240,11 @@ You may include ; in the end if required.
         ]
     
     sql_statement, final_call_token_count = call_groq_api(GROQ_API_KEY,MODEL,messages)
+
+    print("Final SQL query Generated.")
+    dummy_reponse = str(sql_statement)
+    sql_statement = dummy_reponse.replace("\n", " ")
+    print(sql_statement)
 
     return sql_statement, final_call_token_count
 
@@ -233,11 +259,12 @@ def _get_database_schema(query):
     
     Returns:
         str: JSON string containing the relevant database schema
-    """
-    isinstance_search_db = test_schema_embedding.wrapper()
-    results = isinstance_search_db.similarity_search( query, k=1)
+    # """
+    # isinstance_search_db = test_schema_embedding.wrapper()
+    # results = isinstance_search_db.similarity_search( query, k=1)
 
-    return results[0].page_content
+    # return results[0].page_content
+    pass
 
 def _get_table_schema(table_name):
     """
@@ -252,8 +279,17 @@ def _get_table_schema(table_name):
     with open("./table_schemas.json", "r", encoding="utf-8") as file:
         data=json.load(file)
 
-    table_name=table_name.split(" ")[0]
+    for objs_json in data:
+        # print(objs_json)
+        if table_name not in dict(objs_json)["table_name"]:
+            pass
+        else:
+            # print("$$$"*43)
+            return objs_json
+        
 
-    return data[table_name]
+    return "Table Not Found"
        
 
+if __name__ == "__main__":
+    print(_get_table_schema('events'))
