@@ -255,5 +255,112 @@ def _get_table_schema(table_name):
     table_name=table_name.split(" ")[0]
 
     return data[table_name]
+
+
+def extract_intent_from_sql(sql_query):
+    """
+    Use an LLM to extract the natural language intent from a SQL query.
+    
+    Args:
+        sql_query (str): The SQL query to analyze
+        api_key (str): API key for the Groq API
+        model (str): Model to use for the extraction
+        
+    Returns:
+        str: Natural language description of what the query is trying to accomplish
+    """
+    prompt = f"""
+    I'll provide you with a SQL query. Please analyze it and respond with a natural language 
+    description of what the query is trying to accomplish. Describe the operations, filters, 
+    and the overall purpose in clear language a non-technical person could understand.
+    
+    SQL Query:
+    ```sql
+    {sql_query}
+    ```
+    
+    Respond only with the natural language description of the query's intent.
+    """
+    
+    messages = [
+        {"role": "user", "content": prompt}
+    ]
+    
+    response = call_groq_api(GROQ_API_KEY,MODEL, messages)
+    
+    # Extract the content from the response
+    if "choices" in response and len(response["choices"]) > 0:
+        return response["choices"][0]["message"]["content"].strip()
+    else:
+        return "Failed to extract intent from SQL query"
+
+
+def compare_intents(sql_intent, user_intent,sql_query):
+    """
+    Compare the extracted SQL intent with the stated user intent.
+    
+    Args:
+        sql_intent (str): The intent derived from the SQL query
+        user_intent (str): The user's stated intent
+        api_key (str): API key for the Groq API
+        model (str): Model to use for the comparison
+        
+    Returns:
+        dict: Comparison results with match status, confidence, and explanation
+    """
+    prompt=f"""I need to determine if the following descriptions represent the same data retrieval intent.
+    
+Description 1 (derived from SQL):
+{sql_intent}
+    
+Description 2 (user's stated intent):
+{user_intent}
+
+Description 3 (AI generated SQL Query):
+{sql_query}
+    
+Analyze these descriptions and respond in JSON format with only:
+{{
+    "match": "true or  false",
+    "missing_elements": ["list anything if not done by sql query which user query required"]
+}}
+    
+Provide only the JSON object, nothing else."""
+    
+    
+    messages = [
+        {"role": "user", "content": prompt}
+    ]
+    
+    response = call_groq_api(GROQ_API_KEY,MODEL, messages)
+    return response
+
+
+
+def validate_sql(sql_query, user_intent):
+    """
+    Validate if a SQL query matches the user's stated intent.
+    
+    Args:
+        sql_query (str): The SQL query to validate
+        user_intent (str): The user's stated intent
+        api_key (str): API key for the Groq API
+        model (str): Model to use for validation
+        
+    Returns:
+        dict: Complete validation results
+    """
+    # Clean the SQL query
+    # sql_query = sql_query.strip()
+    
+    # Extract the intent from the SQL
+    extracted_intent = extract_intent_from_sql(sql_query)
+    
+    # Compare the intents
+    comparison = compare_intents(extracted_intent, user_intent,sql_query)
+    
+    
+    
+    return comparison
        
 
