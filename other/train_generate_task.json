@@ -1912,3 +1912,7 @@
     "Query": "SELECT transaction_unique_identifier, transaction_date_and_time, payment_method_used FROM transactions_and_payments WHERE total_transaction_amount > 1000 AND refund_status = FALSE"
   }
 ]
+
+
+
+

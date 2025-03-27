@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+os.environ['GOOGLE_API_KEY'] = os.getenv('GOOGLE_API_KEY')
 
 def sql_to_json():
     # Read the SQL file
@@ -76,12 +76,6 @@ sql_document = Document(page_content=sql_text, metadata={"source": "table_schema
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=500)
 final_document = text_splitter.split_documents([sql_document])
 
-# Initialize embedding model
-# embedding = HuggingFaceBgeEmbeddings(
-#     model_name="BAAI/bge-small-en-v1.5",
-#     model_kwargs={"device": "cpu"},
-#     encode_kwargs={"normalize_embeddings": True}
-# )
 embadding= GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
 
@@ -89,12 +83,20 @@ def wrapper():
     # # Create vector database instance
     vector_store = create_vector_db(final_document, embadding)
     return vector_store
-# def get_json_data():
-    
-# # Example search query
-# query = "Customer Info"
-# results = search_vector_db(vector_store, query)
 
-# # Print results
-# for doc in results:
-#     print(doc.page_content)
+
+
+"""
+Query
+# "Query": "SELECT T1.event_type, T2.campaign_name, T3.total_number_of_products_supplied FROM events 
+# AS T1 INNER JOIN campaigns AS T2 ON T1.event_id = T2.campaign_id INNER JOIN suppliers AS T3 
+# ON T2.campaign_id = T3.supplier_unique_identifier WHERE T1.device_type = 'mobile' AND 
+# T2.campaign_status = 'completed' AND T3.supplier_tax_identification_number = '123456789'"
+
+
+SELECT T1.event_type, T2.campaign_name, T3.total_number_of_products_supplied  FROM events 
+AS T1  INNER JOIN campaigns AS T2 ON T1.event_id = T2.campaign_id  INNER JOIN suppliers AS T3 
+ON T2.campaign_id = T3.supplier_unique_identifier  WHERE T1.device_type = 'mobile' AND 
+T2.campaign_status = 'completed' AND T3.supplier_tax_identification_number = '123456789';
+
+"""

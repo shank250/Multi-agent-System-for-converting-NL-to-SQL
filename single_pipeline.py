@@ -62,12 +62,12 @@ def call_groq_api(api_key, model, messages, temperature=0.2, max_tokens=8000, n=
         response = requests.post(url, headers=headers, json=data)
     except Exception as e:
         print("Error in API call:", e)
-        print(json.dumps(response_json, indent=4))    
+        # print(json.dumps(response_json, indent=4))    
 
     response_json = response.json()
     total_tokens += response_json.get('usage', {}).get('total_tokens', 0)
     call_token_count = response_json.get('usage', {}).get('total_tokens', 0)
-    print(json.dumps(response_json, indent=4))
+    # print(json.dumps(response_json, indent=4))
     completion_text = response_json['choices'][0]['message']['content']
 
     return completion_text, call_token_count
@@ -137,12 +137,12 @@ def prune_agent(raw_user_query, required_tables):
    
     pruning_token_count = 0
     required_table_details = ""
-    print(required_tables)
+    # print(required_tables)
     for table_name in list(required_tables):
         time.sleep(1)
         try:
             
-            print("Pruning Started for Table:", table_name)
+            # print("Pruning Started for Table:", table_name)
             table_schema = _get_table_schema(table_name)
             
             prompt = f"""You are a database expert identifying necessary columns for SQL generation.
@@ -177,15 +177,15 @@ def prune_agent(raw_user_query, required_tables):
             ]
 
             table_attributes_required, token_count = call_groq_api(GROQ_API_KEY,MODEL,messages)
-            print(table_attributes_required)
+            # print(table_attributes_required)
             pruning_token_count += token_count
             # required_table_details += table_attributes_required
-            print("Table Pruning Completed for Table", table_name)
+            # print("Table Pruning Completed for Table", table_name)
         except Exception as e:
-            print(":("*20)
+            # print(":("*20)
             print(e)
             
-    return required_table_details, pruning_token_count
+    return table_attributes_required, pruning_token_count
 
 def final_sql_query_generator(raw_user_query, required_table_details, sample_query_response= "None"):
     """
@@ -244,7 +244,7 @@ You may include ; in the end if required.
     print("Final SQL query Generated.")
     dummy_reponse = str(sql_statement)
     sql_statement = dummy_reponse.replace("\n", " ")
-    print(sql_statement)
+    # print(sql_statement)
 
     return sql_statement, final_call_token_count
 
@@ -292,4 +292,5 @@ def _get_table_schema(table_name):
        
 
 if __name__ == "__main__":
-    print(_get_table_schema('events'))
+    # print(_get_table_schema('events'))
+    _get_table_schema('events')

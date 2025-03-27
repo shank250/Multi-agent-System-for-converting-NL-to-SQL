@@ -1,4 +1,4 @@
-PATH_TO_SQL_QUERY_TESTING_FILE = "D:\Hackathons\Adobe\train_generate_task.json"
+PATH_TO_SQL_QUERY_TESTING_FILE = "/Users/shivammishra/Desktop/Adobe/train_generate_task.json"
 import os
 import json
 import time
@@ -141,7 +141,7 @@ def process_queries_linear(file_path):
     print(f"Unsuccessful Matches: {unsuccessful_matches}")
 
 if __name__ == "__main__":
-    sql_file_path = 'other\sample_submission_generate_task.json'  # Ensure proper escaping
+    sql_file_path = 'other/sample_submission_generate_task.json'  # Ensure proper escaping
     
     # print("\nRunning Multithreaded Processing...")
     # process_queries_multithreaded(sql_file_path)
