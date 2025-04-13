@@ -1,6 +1,6 @@
 ## File Description
 
-fintuning_bert_base_for_table_classification -> trying out base bert model with balanaced dataset
+finetuning_bert_base_for_table_classification -> trying out base bert model with balanced dataset
 table_classifier_mod_bert_trainer(2) -> initial attempt to train the modern bert model (got bad performance in true positive prediction.
 
 ## Key take aways
