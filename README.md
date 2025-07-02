@@ -1,4 +1,4 @@
-# Text-to-SQL Conversion Engine with RAG-Enhanced LLM Pipeline
+# SQLify.AI - Multi Agent System
 
 A robust system for converting natural language queries into precise SQL statements using a multi-stage pipeline combining Retrieval-Augmented Generation (RAG) and Language Model (LLM) processing.
 
@@ -164,7 +164,6 @@ The system processes natural language queries through multiple stages:
 4. **Similar Query Search**: Finds examples of similar queries and their SQL translations
 5. **SQL Generation**: Combines the pruned schema and examples to generate the final SQL
 
-![Complete Flow](images/flow2.png)
 
 This multi-step process achieves better results than single-step conversion by breaking down the complex task into manageable components.
 
